@@ -14,22 +14,35 @@ static OSStatus status;
 static void initRights();
 NSString *runAsRoot(NSString *command, NSArray *args);
 
+/* Для начала заменим все printf() на NSLog() - оно нативнее и не нужно в UTF8String все конвертить */
+
 int main (int argc, const char * argv[])
 {
-    NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];    
-    if(argc>2 && argc%2!=0){
+    NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
+    
+    if(argc > 2 && (argc % 2) != 0){ 
         initRights();
-        printf("Script Started\n");
-        
-        for(int i=1;i<argc;i+=2){
-            printf("installing of %d pare\n%s and %s\n",i,argv[i],argv[i+1]); 
-            runAsRoot(@"/usr/sbin/installer",[NSArray arrayWithObjects: @"-pkg",argv[i],@"-target",argv[i+1], nil]);
-            //printf("%s\n",[ UTF8String]); 
-            //runAsRoot(@"/bin/mkdir", [NSArray arrayWithObjects: @"/stert",nil]);
-        }
+
+        /* Иначе - будем вылезать за границы массива */
+        int count = argc - 1;
+        /* Начинать же с 2 надо, а 1 - это "-pkg" */
+        for (int i = 2;i < count; i += 2) {
             
-        printf("end...\n");  
-    } else printf("nothing to be done\n");
+            //NSLog(@"Proccessing package [%s] at path [%s]\n", argv[i], argv[i+2]);
+            
+            /* ОК. Нельзя добавлять в NSArray C-шные структуры данных (типа int, char, struct, etc)
+             * Все трабла в этом и есть. 
+             */
+            id temp = runAsRoot(@"/usr/sbin/installer",[NSArray arrayWithObjects: 
+                                                        @"-pkg",
+                                                        [NSString stringWithUTF8String:argv[i]],
+                                                         @"-target",
+                                                         [NSString stringWithUTF8String:argv[i+2]], nil]);
+            /* Еще можно замутить лог ответа установщика, вроде
+             * NSLog(@"%@",(NSString*)temp);
+             */
+        } 
+    } else NSLog(@"usage: epi [-pkg ...] [-target ...]\n");
     
     [pool drain];
     return 0;
@@ -37,7 +50,22 @@ int main (int argc, const char * argv[])
 
 void initRights() 
 {
-    status = AuthorizationCreate(NULL, kAuthorizationEmptyEnvironment, kAuthorizationFlagDefaults, &authRef);
+    AuthorizationItem rights[2] = {{"org.epi.epi",  0, NULL, 0 },
+        {"system.privilege.admin", 0, NULL, 0}};
+    AuthorizationRights rightSet = {2, rights};
+    
+    
+    // Then set needen flags
+    AuthorizationFlags flags = kAuthorizationFlagDefaults | kAuthorizationFlagPreAuthorize | kAuthorizationFlagInteractionAllowed | kAuthorizationFlagExtendRights;
+    
+    // And do it auth
+    status = AuthorizationCreate(NULL, kAuthorizationEmptyEnvironment, flags, &authRef);
+    if (status !=errAuthorizationSuccess) {return;}
+    
+    // Save our right for next time
+    status = AuthorizationCopyRights(authRef, &rightSet, kAuthorizationEmptyEnvironment, flags, NULL);
+    if (status !=errAuthorizationSuccess) {return;}
+
 }
 
 NSString *runAsRoot(NSString *command, NSArray *args)
