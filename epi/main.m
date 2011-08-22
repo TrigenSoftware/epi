@@ -14,8 +14,6 @@ static OSStatus status;
 static void initRights();
 NSString *runAsRoot(NSString *command, NSArray *args);
 
-/* Для начала заменим все printf() на NSLog() - оно нативнее и не нужно в UTF8String все конвертить */
-
 int main (int argc, const char * argv[])
 {
     NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
@@ -26,9 +24,10 @@ int main (int argc, const char * argv[])
         /* Иначе - будем вылезать за границы массива */
         int count = argc - 1;
         /* Начинать же с 2 надо, а 1 - это "-pkg" */
-        for (int i = 2;i < count; i += 2) {
+        for (int i = 2;i < count; i += 4) {
             
-            //NSLog(@"Proccessing package [%s] at path [%s]\n", argv[i], argv[i+2]);
+            // name -pkq 1 -target 2 -pkg 3 =tagret 4
+            NSLog(@"Proccessing package [%s] at path [%s]\n", argv[i], argv[i+2]);
             
             /* ОК. Нельзя добавлять в NSArray C-шные структуры данных (типа int, char, struct, etc)
              * Все трабла в этом и есть. 
