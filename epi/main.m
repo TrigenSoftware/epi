@@ -22,7 +22,6 @@ int main (int argc, const char * argv[])
         printf("installing was started\n");
         initRights();
         
-        /* Начинать же с 2 надо, а 1 - это "-pkg" */
         for (int i = 1;i < argc-1; i += 2) {
             printf("Proccessing package [%s] at path [%s]\n", argv[i], argv[i+1]);
             printf("%s",[runAsRoot(@"/usr/sbin/installer",[NSArray arrayWithObjects: 
