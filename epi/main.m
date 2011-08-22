@@ -19,29 +19,23 @@ int main (int argc, const char * argv[])
     NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
     
     if(argc > 2 && (argc % 2) != 0){ 
+        printf("installing was started\n");
         initRights();
-
-        /* Иначе - будем вылезать за границы массива */
-        int count = argc - 1;
+        
         /* Начинать же с 2 надо, а 1 - это "-pkg" */
-        for (int i = 2;i < count; i += 4) {
-            
-            // name -pkq 1 -target 2 -pkg 3 =tagret 4
-            NSLog(@"Proccessing package [%s] at path [%s]\n", argv[i], argv[i+2]);
-            
-            /* ОК. Нельзя добавлять в NSArray C-шные структуры данных (типа int, char, struct, etc)
-             * Все трабла в этом и есть. 
-             */
-            id temp = runAsRoot(@"/usr/sbin/installer",[NSArray arrayWithObjects: 
+        for (int i = 1;i < argc-1; i += 2) {
+            printf("Proccessing package [%s] at path [%s]\n", argv[i], argv[i+1]);
+            printf("%s",[runAsRoot(@"/usr/sbin/installer",[NSArray arrayWithObjects: 
                                                         @"-pkg",
                                                         [NSString stringWithUTF8String:argv[i]],
-                                                         @"-target",
-                                                         [NSString stringWithUTF8String:argv[i+2]], nil]);
-            /* Еще можно замутить лог ответа установщика, вроде
-             * NSLog(@"%@",(NSString*)temp);
-             */
+                                                        @"-target",
+                                                        [NSString stringWithUTF8String:argv[i+1]], nil]) UTF8String]);          
+           
         } 
-    } else NSLog(@"usage: epi [-pkg ...] [-target ...]\n");
+      
+        printf("end...\n");  
+        
+    } else printf("usage: epi *.pkg /dev/*\n");
     
     [pool drain];
     return 0;
